@@ -123,18 +123,26 @@ class PDFProcessor:
         cropped_np = np.array(page_img)[y1:y2, x1:x2]
         cropped_img = Image.fromarray(cropped_np)
         
-        # Preprocessing for better OCR
+        # Detect if this is likely a table
+        is_table = OCREnhancer.is_likely_table(cropped_img)
+        
+        # Enhanced preprocessing for better OCR
         processed_img = OCREnhancer.enhance_for_table(cropped_img)
+        processed_img_advanced = OCREnhancer.enhance_for_table_advanced(cropped_img)
         
         # Save cropped image
         crop_filename = f'crop_{index + 1}.png'
         crop_path = page_folder / crop_filename
         cropped_img.save(crop_path)
         
-        # Save processed image for debugging
+        # Save processed images for debugging
         processed_filename = f'crop_{index + 1}_processed.png'
         processed_path = page_folder / processed_filename
         processed_img.save(processed_path)
+        
+        processed_advanced_filename = f'crop_{index + 1}_processed_advanced.png'
+        processed_advanced_path = page_folder / processed_advanced_filename
+        processed_img_advanced.save(processed_advanced_path)
         
         # Create thumbnail
         crop_thumb = self._create_thumbnail(cropped_img, size=(200, 200))
@@ -145,24 +153,70 @@ class PDFProcessor:
         # OCR with multiple configs for tables
         text_results = []
         
-        # Try structured table extraction first
-        try:
-            table_text = OCREnhancer.extract_table_with_structure(processed_img)
-            if table_text and len(table_text) > 20:
-                text_results.append(("Structured Table", table_text))
-        except Exception as e:
-            print(f"Structured extraction failed: {e}")
+        # If detected as table, prioritize table-specific methods
+        if is_table:
+            # Try structured table extraction first
+            try:
+                table_text = OCREnhancer.extract_table_with_structure(processed_img)
+                if table_text and len(table_text) > 20:
+                    text_results.append(("Structured Table", table_text))
+            except Exception as e:
+                print(f"Structured extraction failed: {e}")
+            
+            # Try structured extraction with advanced preprocessing
+            try:
+                table_text_advanced = OCREnhancer.extract_table_with_structure(processed_img_advanced)
+                if table_text_advanced and len(table_text_advanced) > 20:
+                    text_results.append(("Structured Table (Advanced)", table_text_advanced))
+            except Exception as e:
+                print(f"Advanced structured extraction failed: {e}")
+            
+            # Try table-specific OCR configurations
+            table_configs = [
+                {
+                    "name": "Table Specific",
+                    "config": "--psm 6 --oem 3 -c preserve_interword_spaces=1 -c textord_tabfind_find_tables=1 -c textord_tablefind_recognize_tables=1 -c textord_min_xheight=15"
+                },
+                {
+                    "name": "High DPI Table",
+                    "config": "--psm 6 --oem 3 --dpi 300 -c tessedit_char_whitelist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-.,/() ' -c preserve_interword_spaces=1 -c textord_tabfind_find_tables=1 -c textord_tablefind_recognize_tables=1"
+                }
+            ]
+            
+            for ocr_config in table_configs:
+                try:
+                    text = pytesseract.image_to_string(processed_img, config=ocr_config["config"], lang='eng').strip()
+                    if text and len(text) > 10:
+                        processed_text = OCREnhancer.process_table_text(text)
+                        text_results.append((ocr_config["name"], processed_text))
+                except Exception as e:
+                    print(f"Table OCR config {ocr_config['name']} failed: {e}")
+                
+                try:
+                    text = pytesseract.image_to_string(processed_img_advanced, config=ocr_config["config"], lang='eng').strip()
+                    if text and len(text) > 10:
+                        processed_text = OCREnhancer.process_table_text(text)
+                        text_results.append((f"{ocr_config['name']} (Advanced)", processed_text))
+                except Exception as e:
+                    print(f"Advanced table OCR config {ocr_config['name']} failed: {e}")
         
-        # Try different OCR configurations
+        # Try general OCR configurations
         for ocr_config in OCREnhancer.get_optimized_configs():
             try:
                 text = pytesseract.image_to_string(processed_img, config=ocr_config["config"], lang='eng').strip()
-                if text and len(text) > 10:  # Only save meaningful results
-                    # Post-process for tables
+                if text and len(text) > 10:
                     processed_text = OCREnhancer.process_table_text(text)
                     text_results.append((ocr_config["name"], processed_text))
             except Exception as e:
                 print(f"OCR config {ocr_config['name']} failed: {e}")
+            
+            try:
+                text = pytesseract.image_to_string(processed_img_advanced, config=ocr_config["config"], lang='eng').strip()
+                if text and len(text) > 10:
+                    processed_text = OCREnhancer.process_table_text(text)
+                    text_results.append((f"{ocr_config['name']} (Advanced)", processed_text))
+            except Exception as e:
+                print(f"Advanced OCR config {ocr_config['name']} failed: {e}")
         
         # Also try with original image for comparison
         try:
@@ -172,30 +226,29 @@ class PDFProcessor:
         except:
             pass
         
-        # Save all text results
+        # Select the best result
+        best_text = OCREnhancer.select_best_result(text_results)
+        
+        # Save the best result only
         text_filename = None
-        if text_results:
+        if best_text:
             text_filename = f'crop_{index + 1}_text.txt'
             text_path = page_folder / text_filename
             with open(text_path, 'w', encoding='utf-8') as f:
-                for mode, text in text_results:
-                    f.write(f"=== {mode} ===\n{text}\n\n")
-            
-            # Use the best result for display (usually the first one)
-            best_text = text_results[0][1]
-        else:
-            best_text = ""
+                f.write(best_text)
         
         return {
             "index": index + 1,
             "bbox": [x1, y1, x2, y2],
+            "is_table": is_table,
             "image": {
                 "full": crop_filename,
                 "thumbnail": crop_thumb_filename,
-                "processed": processed_filename
+                "processed": processed_filename,
+                "processed_advanced": processed_advanced_filename
             },
             "text": {
-                "content": best_text if text_results else None,
+                "content": best_text if best_text else None,
                 "file": text_filename
             }
         }
