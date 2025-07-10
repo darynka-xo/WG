@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pdf2image
+pytesseract
+ultralytics
+ultralyticsplus
+jinja2
+python-multipart
+Pillow
+numpy
