@@ -1,10 +1,22 @@
+# PDF Part Extraction Pipeline Dependencies
+
+# Web Framework
 fastapi
-uvicorn
-pdf2image
-pytesseract
-ultralytics
-ultralyticsplus
-jinja2
+uvicorn[standard]
 python-multipart
+
+# Core data processing
+pandas
+openpyxl
+
+# OCR and document processing  
+python-doctr[torch]
+python-doctr[viz,html,contrib]
+pymupdf
+
+# AI and API integration
+openai
+
+# Additional utilities
 Pillow
-numpy
+matplotlib 

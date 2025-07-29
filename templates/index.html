@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Document Analysis Platform - DualbootPartners</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 40px 30px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1e3a8a;
+            font-size: 18px;
+        }
+
+        .company-name {
+            font-size: 1.4em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-content {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .main-content {
+            padding: 50px 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .mode-selection {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .mode-selection h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 60px 20px;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #374151;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 5px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .results-header {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .results-header h2 {
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .summary-card .number {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 5px;
+        }
+
+        .summary-card .label {
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .files-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .file-item {
+            padding: 20px 25px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 5px;
+            font-size: 1.05em;
+        }
+
+        .file-details {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            border-radius: 4px;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-info {
+            background: #3b82f6;
+        }
+
+        .btn-info:hover {
+            background: #2563eb;
+        }
+
+        .preview-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .preview-section h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .preview-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            background: #1f2937;
+            color: #d1d5db;
+            text-align: center;
+            padding: 25px;
+            margin-top: 40px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-brand {
+            font-weight: 600;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .main-content {
+                padding: 30px 20px;
+            }
+            
+            .results-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .header-brand {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-brand">
+                <div class="logo-section">
+                    <div class="company-logo">DB</div>
+                    <div class="company-name">DualbootPartners</div>
+                </div>
+            </div>
+            <div class="header-content">
+                <h1>Project for WG Henschen</h1>
+                <p>Document processing and part extraction system</p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Mode Selection -->
+            <div class="mode-selection">
+                <h3>Select Analysis Mode</h3>
+                <button class="btn" id="partExtractionMode" onclick="setMode('extraction')">
+                    Part Extraction Analysis
+                </button>
+                <button class="btn btn-secondary" id="ocrViewerMode" onclick="setMode('ocr')">
+                    Interactive OCR Viewer
+                </button>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon" id="uploadIcon">📄</div>
+                    <div class="upload-text" id="uploadText">
+                        <strong>Select PDF Document for Analysis</strong><br>
+                        <small id="uploadSubtext">Technical drawings, part catalogs, and specification documents</small>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        Browse Files
+                    </button>
+                </div>
+                
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <!-- Loading Section -->
+            <div class="loading" id="loadingSection">
+                <div class="spinner"></div>
+                <h3>Processing Document</h3>
+                <p>Performing OCR analysis and AI-powered data extraction. Please wait.</p>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h2>Analysis Results</h2>
+                    <p id="processingInfo">Document processing completed successfully</p>
+                </div>
+
+                <div class="results-summary" id="resultsSummary">
+                    <!-- Summary cards will be populated by JavaScript -->
+                </div>
+
+                <div class="files-list" id="filesList">
+                    <!-- File list will be populated by JavaScript -->
+                </div>
+
+                <div class="preview-section" id="previewSection">
+                    <h3>Extracted Data Sample</h3>
+                    <div id="previewContent">
+                        <!-- Preview content will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="btn" onclick="startNewUpload()">
+                        Process New Document
+                    </button>
+                    <button class="btn btn-success" id="downloadAllBtn" onclick="downloadAll()">
+                        Download Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-brand">DualbootPartners</div>
+                <div>2025</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUploadId = null;
+        let currentMode = 'extraction'; // 'extraction' or 'ocr'
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        // Mode switching
+        function setMode(mode) {
+            currentMode = mode;
+            const extractionBtn = document.getElementById('partExtractionMode');
+            const ocrBtn = document.getElementById('ocrViewerMode');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            const uploadSubtext = document.getElementById('uploadSubtext');
+            
+            if (mode === 'extraction') {
+                extractionBtn.className = 'btn';
+                ocrBtn.className = 'btn btn-secondary';
+                uploadIcon.textContent = '📄';
+                uploadText.innerHTML = '<strong>Select PDF Document for Analysis</strong><br>';
+                uploadSubtext.textContent = 'Technical drawings, part catalogs, and specification documents';
+            } else {
+                extractionBtn.className = 'btn btn-secondary';
+                ocrBtn.className = 'btn';
+                uploadIcon.textContent = '🔍';
+                uploadText.innerHTML = '<strong>Upload PDF for Interactive OCR Analysis</strong><br>';
+                uploadSubtext.textContent = 'View detailed OCR results with confidence scores';
+            }
+            
+            // Reset UI
+            startNewUpload();
+        }
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        async function handleFileUpload(file) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showStatus('Please select a PDF file.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            if (currentMode === 'ocr') {
+                // OCR Mode - upload and redirect to OCR viewer
+                showStatus('Uploading file for OCR analysis...', 'info');
+                progressBar.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/process-pdf-ocr', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showStatus('Upload successful! Redirecting to OCR viewer...(If you are using Safari, please press the pop-up button near the top right corner of the screen)', 'success');
+                        // Redirect to OCR viewer
+                        setTimeout(() => {
+                            window.open(`/ocr-viewer/${result.upload_id}`, '_blank');
+                        }, 1000);
+                        progressBar.style.display = 'none';
+                    } else {
+                        throw new Error(result.detail || 'Upload failed');
+                    }
+                } catch (error) {
+                    showStatus(`Error: ${error.message}`, 'error');
+                    progressBar.style.display = 'none';
+                }
+            } else {
+                // Part Extraction Mode - existing functionality
+                showStatus('Uploading file...', 'info');
+                progressBar.style.display = 'block';
+                loadingSection.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        currentUploadId = result.upload_id;
+                        showStatus('Upload successful! Processing...', 'success');
+                        pollStatus(result.upload_id);
+                    } else {
+                        throw new Error(result.detail || 'Upload failed');
+                    }
+                } catch (error) {
+                    showStatus(`Error: ${error.message}`, 'error');
+                    loadingSection.style.display = 'none';
+                    progressBar.style.display = 'none';
+                }
+            }
+        }
+
+        async function pollStatus(uploadId) {
+            try {
+                const response = await fetch(`/status/${uploadId}`);
+                const status = await response.json();
+
+                if (status.status === 'completed') {
+                    loadingSection.style.display = 'none';
+                    await loadResults(uploadId);
+                } else if (status.status === 'error') {
+                    throw new Error(status.message);
+                } else {
+                    // Still processing, poll again
+                    setTimeout(() => pollStatus(uploadId), 2000);
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                loadingSection.style.display = 'none';
+            }
+        }
+
+        async function loadResults(uploadId) {
+            try {
+                const response = await fetch(`/results/${uploadId}`);
+                const data = await response.json();
+
+                displayResults(data);
+                progressBar.style.display = 'none';
+                resultsSection.style.display = 'block';
+                showStatus('Processing completed successfully!', 'success');
+            } catch (error) {
+                showStatus(`Error loading results: ${error.message}`, 'error');
+            }
+        }
+
+        function displayResults(data) {
+            // Update processing info
+            const processingInfo = document.getElementById('processingInfo');
+            processingInfo.textContent = `Processing completed successfully - ${data.records_extracted || 0} records extracted in ${data.processing_time || 0}s`;
+            
+            // Calculate total file size
+            const totalSize = data.results.reduce((sum, file) => sum + (file.size_kb || 0), 0);
+            
+            // Create summary cards
+            const summaryContainer = document.getElementById('resultsSummary');
+            summaryContainer.innerHTML = `
+                <div class="summary-card">
+                    <div class="number">${data.results.length || 0}</div>
+                    <div class="label">Files Generated</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number">${data.records_extracted || 0}</div>
+                    <div class="label">Records Extracted</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number">${data.processing_time || 0}</div>
+                    <div class="label">Processing Time (s)</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number">${totalSize.toFixed(1)}</div>
+                    <div class="label">Total Size (KB)</div>
+                </div>
+            `;
+
+            // Display files list
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '';
+            
+            data.results.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.filename}</div>
+                        <div class="file-details">${file.type} • ${file.size_kb} KB • ${file.description}</div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-small btn-success" onclick="downloadFile('${data.upload_id}', 'file', '${file.filename}')">
+                            📥 Download
+                        </button>
+                    </div>
+                `;
+                filesList.appendChild(fileItem);
+            });
+
+            // Show sample records if available
+            const previewContent = document.getElementById('previewContent');
+            if (data.sample_records && data.sample_records.length > 0) {
+                const sampleRecord = data.sample_records[0];
+                const fields = Object.keys(sampleRecord);
+                
+                let tableHTML = '<table class="preview-table"><thead><tr>';
+                fields.forEach(field => {
+                    tableHTML += `<th>${field}</th>`;
+                });
+                tableHTML += '</tr></thead><tbody>';
+                
+                data.sample_records.forEach(record => {
+                    tableHTML += '<tr>';
+                    fields.forEach(field => {
+                        tableHTML += `<td>${record[field] || ''}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+                tableHTML += '</tbody></table>';
+                
+                previewContent.innerHTML = tableHTML;
+            } else {
+                previewContent.innerHTML = '<p>No sample records available</p>';
+            }
+
+            // Set download all button
+            document.getElementById('downloadAllBtn').onclick = () => downloadAll(data.upload_id);
+        }
+
+        function downloadFile(uploadId, fileType, filename) {
+            window.open(`/download/${uploadId}/${fileType}/${filename}`, '_blank');
+        }
+
+        function downloadAll(uploadId = currentUploadId) {
+            if (uploadId) {
+                window.open(`/download-all/${uploadId}`, '_blank');
+            }
+        }
+
+        function startNewUpload() {
+            resultsSection.style.display = 'none';
+            statusMessage.style.display = 'none';
+            fileInput.value = '';
+            currentUploadId = null;
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  ocr-app:
+    build: .
+    container_name: pdf-ocr-extractor
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistent storage for uploads, results, and temp files
+      - ./docker-volumes/uploads:/app/uploads
+      - ./docker-volumes/results:/app/results
+      - ./docker-volumes/temp:/app/temp
+      - ./docker-volumes/static:/app/static
+    environment:
+      # OpenAI API configuration (required for AI processing)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Optional: Custom configuration
+      - CLEANUP_HOURS=${CLEANUP_HOURS:-1}
+      - CLEANUP_INTERVAL=${CLEANUP_INTERVAL:-300}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  uploads:
+  results:
+  temp:
+  static: 

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive OCR Document Viewer - DualbootPartners</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+      background: #f8f9fa;
+      min-height: 100vh;
+      color: #2c3e50;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 30px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .company-logo {
+      width: 45px;
+      height: 45px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #1e3a8a;
+      font-size: 16px;
+    }
+
+    .header-text h1 {
+      font-size: 2.2em;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    .header-text p {
+      font-size: 1.1em;
+      opacity: 0.9;
+      font-weight: 300;
+    }
+
+    .company-name {
+      font-size: 1.1em;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .back-button {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .main-content {
+      padding: 40px;
+    }
+
+    .page-controls {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .page-info {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .page-info h3 {
+      color: #1f2937;
+      font-size: 1.3em;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .page-counter {
+      font-size: 1.1em;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .slider-container {
+      position: relative;
+      margin: 25px 0;
+    }
+
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e5e7eb;
+      outline: none;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .custom-slider:hover {
+      opacity: 1;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .custom-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 3px 8px rgba(59, 130, 246, 0.4);
+    }
+
+    .custom-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    }
+
+    .page-navigation {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .nav-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .nav-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading-indicator {
+      text-align: center;
+      color: #3b82f6;
+      font-size: 1.1em;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: none;
+      font-weight: 500;
+    }
+
+    .viewer-container {
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    #ocr-container {
+      position: relative;
+      display: inline-block;
+      margin: 0 auto;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .pdf-page {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .ocr-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .ocr-box {
+      position: absolute;
+      border: none;
+      background-color: transparent;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ocr-box:hover {
+      background-color: rgba(59, 130, 246, 0.15);
+      border: 1px solid #3b82f6;
+      border-radius: 2px;
+    }
+
+    .ocr-box:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      top: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 6px 10px;
+      font-size: 11px;
+      white-space: nowrap;
+      z-index: 10;
+      border-radius: 4px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      font-weight: 500;
+    }
+
+    .ocr-box:hover::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #1f2937;
+      z-index: 11;
+    }
+
+    .keyboard-hint {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f0fdf4;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      color: #065f46;
+      font-size: 0.9em;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .info-panel {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      color: #1e40af;
+    }
+
+    .info-panel h4 {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .footer {
+      background: #1f2937;
+      color: #d1d5db;
+      text-align: center;
+      padding: 20px;
+      margin-top: 40px;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .footer-brand {
+      font-weight: 600;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+        padding: 25px 20px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .main-content {
+        padding: 30px 20px;
+      }
+      
+      .page-navigation {
+        flex-wrap: wrap;
+      }
+      
+      .nav-btn {
+        padding: 10px 16px;
+        font-size: 0.9em;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-content">
+        <div class="company-logo">DB</div>
+        <div class="header-text">
+          <div class="company-name">DualbootPartners</div>
+          <h1>OCR Document Viewer</h1>
+          <p>Interactive document analysis with text detection overlay</p>
+        </div>
+      </div>
+      <a href="/" class="back-button">
+        ← Return to Platform
+      </a>
+    </div>
+
+    <div class="main-content">
+      <div class="info-panel">
+        <h4>Document Analysis Tools</h4>
+        <p>This viewer displays OCR results with interactive text regions. Hover over highlighted areas to view detected text and confidence scores.</p>
+      </div>
+
+      <div class="page-controls">
+        <div class="page-info">
+          <h3>Document Navigation</h3>
+          <div class="page-counter">
+            Page <span id="pageNum">1</span> of <span id="totalPages">1</span>
+          </div>
+        </div>
+
+        <div class="slider-container">
+          <input type="range" id="pageSlider" min="1" max="1" value="1" class="custom-slider">
+        </div>
+
+        <div class="page-navigation">
+          <button id="prevBtn" class="nav-btn">
+            ← Previous
+          </button>
+          <button id="nextBtn" class="nav-btn">
+            Next →
+          </button>
+        </div>
+
+        <div class="keyboard-hint">
+          Use arrow keys (← →) for quick navigation between pages
+        </div>
+      </div>
+
+      <div class="loading-indicator" id="loading">
+        Loading document page...
+      </div>
+
+      <div class="viewer-container">
+        <div id="ocr-container">
+          <img id="pdf-page" class="pdf-page" src="/static/{{UPLOAD_ID}}_pdf_page_0.png" alt="PDF Page">
+          <img id="ocr-overlay" class="ocr-overlay" src="/static/{{UPLOAD_ID}}_ocr_overlay_0.png" alt="OCR Overlay">
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-content">
+        <div class="footer-brand">DualbootPartners</div>
+        <div>2025</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadId = "{{UPLOAD_ID}}";
+
+    const slider = document.getElementById('pageSlider');
+    const pageNumLabel = document.getElementById('pageNum');
+    const totalPagesLabel = document.getElementById('totalPages');
+    const loadingDiv = document.getElementById('loading');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const container = document.getElementById('ocr-container');
+    const pdfImg = document.getElementById('pdf-page');
+    const overlayImg = document.getElementById('ocr-overlay');
+
+    let ocrData = null;
+    let currentPage = 0;
+
+    async function loadOCRData() {
+      try {
+        loadingDiv.style.display = 'block';
+        const res = await fetch(`/static/${uploadId}_ocr_data.json`);
+        ocrData = await res.json();
+
+        const totalPages = ocrData.pages.length;
+        slider.max = totalPages;
+        totalPagesLabel.textContent = totalPages;
+        
+        console.log(`Loaded OCR data for ${totalPages} pages`);
+        renderPage(0); // Start with first page
+        updateNavigationButtons();
+      } catch (error) {
+        console.error('Failed to load OCR data:', error);
+        loadingDiv.textContent = 'Failed to load OCR data';
+      }
+    }
+
+    function updateNavigationButtons() {
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === ocrData.pages.length - 1;
+    }
+
+    function renderPage(pageIdx) {
+      if (!ocrData || !ocrData.pages[pageIdx]) {
+        console.error(`Page ${pageIdx} not found in OCR data`);
+        return;
+      }
+
+      currentPage = pageIdx;
+      loadingDiv.style.display = 'block';
+      loadingDiv.textContent = `Loading page ${pageIdx + 1}...`;
+
+      // Update UI
+      pageNumLabel.textContent = pageIdx + 1;
+      slider.value = pageIdx + 1;
+      updateNavigationButtons();
+
+      // Clear existing boxes
+      [...document.querySelectorAll(".ocr-box")].forEach(e => e.remove());
+
+      const page = ocrData.pages[pageIdx];
+      const [w_orig, h_orig] = page.dimensions;
+
+      console.log(`Rendering page ${pageIdx + 1} with ${page.blocks.length} blocks`);
+
+      // Update both images
+      const pdfSrc = `/static/${uploadId}_pdf_page_${pageIdx}.png`;
+      const overlaySrc = `/static/${uploadId}_ocr_overlay_${pageIdx}.png`;
+      
+      pdfImg.src = pdfSrc;
+      overlayImg.src = overlaySrc;
+
+      let pdfLoaded = false;
+      let overlayLoaded = false;
+
+      function checkBothLoaded() {
+        if (pdfLoaded && overlayLoaded) {
+          createInteractiveBoxes();
+          loadingDiv.style.display = 'none';
+        }
+      }
+
+      function createInteractiveBoxes() {
+        const imgWidth = pdfImg.width;
+        const imgHeight = pdfImg.height;
+
+        if (imgWidth === 0 || imgHeight === 0) {
+          console.warn('Image dimensions are 0, waiting for image to load properly');
+          return;
+        }
+
+        console.log(`Creating boxes for page ${pageIdx + 1}, image size: ${imgWidth}x${imgHeight}`);
+
+        // Create interactive hover boxes based on OCR data
+        let wordCount = 0;
+        for (const block of page.blocks) {
+          for (const line of block.lines) {
+            for (const word of line.words) {
+              wordCount++;
+              const [[x_min, y_min], [x_max, y_max]] = word.geometry;
+              const left = x_min * imgWidth;
+              const top = y_min * imgHeight;
+              const width = (x_max - x_min) * imgWidth;
+              const height = (y_max - y_min) * imgHeight;
+
+              const box = document.createElement("div");
+              box.className = "ocr-box";
+              box.style.left = `${left}px`;
+              box.style.top = `${top}px`;
+              box.style.width = `${width}px`;
+              box.style.height = `${height}px`;
+
+              box.setAttribute("data-label", `${word.value} (${(word.confidence * 100).toFixed(1)}%)`);
+              container.appendChild(box);
+            }
+          }
+        }
+        console.log(`Created ${wordCount} interactive boxes for page ${pageIdx + 1}`);
+      }
+
+      pdfImg.onload = () => {
+        console.log(`PDF image loaded for page ${pageIdx + 1}`);
+        pdfLoaded = true;
+        checkBothLoaded();
+      };
+
+      pdfImg.onerror = () => {
+        console.error(`Failed to load PDF image: ${pdfSrc}`);
+        loadingDiv.textContent = `Failed to load page ${pageIdx + 1}`;
+      };
+
+      overlayImg.onload = () => {
+        console.log(`Overlay image loaded for page ${pageIdx + 1}`);
+        overlayLoaded = true;
+        checkBothLoaded();
+      };
+
+      overlayImg.onerror = () => {
+        console.error(`Failed to load overlay image: ${overlaySrc}`);
+        // Still proceed if overlay fails to load
+        overlayLoaded = true;
+        checkBothLoaded();
+      };
+    }
+
+    // Event listeners
+    slider.addEventListener('input', () => {
+      const pageNumber = parseInt(slider.value);
+      const pageIndex = pageNumber - 1;
+      console.log(`Slider changed to page ${pageNumber} (index ${pageIndex})`);
+      renderPage(pageIndex);
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 0) {
+        renderPage(currentPage - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < ocrData.pages.length - 1) {
+        renderPage(currentPage + 1);
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (!ocrData) return;
+      
+      if (e.key === 'ArrowLeft' && currentPage > 0) {
+        renderPage(currentPage - 1);
+      } else if (e.key === 'ArrowRight' && currentPage < ocrData.pages.length - 1) {
+        renderPage(currentPage + 1);
+      }
+    });
+
+    loadOCRData();
+  </script>
+</body>
+</html>
