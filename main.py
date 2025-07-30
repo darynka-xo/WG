@@ -453,4 +453,12 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     print("🌐 Starting web server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info") 
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000, 
+        log_level="info",
+        timeout_keep_alive=300,  # Keep connections alive for 5 minutes
+        timeout_graceful_shutdown=60,  # Graceful shutdown timeout
+        access_log=True
+    ) 

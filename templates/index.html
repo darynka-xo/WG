@@ -623,10 +623,23 @@
                 progressBar.style.display = 'block';
                 
                 try {
+                    // Add timeout to the upload request
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for upload
+                    
                     const response = await fetch('/process-pdf-ocr', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error(`Server returned ${response.status}: Expected JSON but received ${contentType || 'unknown content type'}`);
+                    }
 
                     const result = await response.json();
 
@@ -641,7 +654,16 @@
                         throw new Error(result.detail || 'Upload failed');
                     }
                 } catch (error) {
-                    showStatus(`Error: ${error.message}`, 'error');
+                    console.error('OCR upload error:', error);
+                    
+                    if (error.name === 'AbortError') {
+                        showStatus('Upload timed out. Please try again with a smaller file or check your internet connection.', 'error');
+                    } else if (error.message.includes('JSON')) {
+                        showStatus('Server error during upload. Please try again or contact support.', 'error');
+                    } else {
+                        showStatus(`Error: ${error.message}`, 'error');
+                    }
+                    
                     progressBar.style.display = 'none';
                 }
             } else {
@@ -651,10 +673,23 @@
                 loadingSection.style.display = 'block';
                 
                 try {
+                    // Add timeout to the upload request
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for upload
+                    
                     const response = await fetch('/upload', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error(`Server returned ${response.status}: Expected JSON but received ${contentType || 'unknown content type'}`);
+                    }
 
                     const result = await response.json();
 
@@ -666,7 +701,16 @@
                         throw new Error(result.detail || 'Upload failed');
                     }
                 } catch (error) {
-                    showStatus(`Error: ${error.message}`, 'error');
+                    console.error('Upload error:', error);
+                    
+                    if (error.name === 'AbortError') {
+                        showStatus('Upload timed out. Please try again with a smaller file or check your internet connection.', 'error');
+                    } else if (error.message.includes('JSON')) {
+                        showStatus('Server error during upload. Please try again or contact support.', 'error');
+                    } else {
+                        showStatus(`Error: ${error.message}`, 'error');
+                    }
+                    
                     loadingSection.style.display = 'none';
                     progressBar.style.display = 'none';
                 }
@@ -674,28 +718,103 @@
         }
 
         async function pollStatus(uploadId) {
-            try {
-                const response = await fetch(`/status/${uploadId}`);
-                const status = await response.json();
+            let pollAttempts = 0;
+            const maxPollAttempts = 300; // 5 minutes worth of attempts (300 * 2s = 10 minutes)
+            
+            async function poll() {
+                try {
+                    pollAttempts++;
+                    
+                    // Add timeout to the fetch request
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    
+                    const response = await fetch(`/status/${uploadId}`, {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error(`Server returned ${response.status}: Expected JSON but received ${contentType || 'unknown content type'}`);
+                    }
+                    
+                    const status = await response.json();
 
-                if (status.status === 'completed') {
-                    loadingSection.style.display = 'none';
-                    await loadResults(uploadId);
-                } else if (status.status === 'error') {
-                    throw new Error(status.message);
-                } else {
-                    // Still processing, poll again
-                    setTimeout(() => pollStatus(uploadId), 2000);
+                    if (status.status === 'completed') {
+                        loadingSection.style.display = 'none';
+                        await loadResults(uploadId);
+                    } else if (status.status === 'error') {
+                        throw new Error(status.message);
+                    } else {
+                        // Still processing, poll again with exponential backoff
+                        const delay = Math.min(2000 + (pollAttempts * 100), 5000); // Max 5 second delay
+                        setTimeout(poll, delay);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    
+                    // Handle specific error types
+                    if (error.name === 'AbortError') {
+                        console.log('Request timed out, retrying...');
+                    } else if (error.message.includes('JSON')) {
+                        console.log('Received HTML instead of JSON, likely a server error page');
+                    }
+                    
+                    // If we haven't exceeded max attempts, retry with longer delay
+                    if (pollAttempts < maxPollAttempts) {
+                        const retryDelay = Math.min(5000 + (pollAttempts * 500), 15000); // Max 15 second delay
+                        console.log(`Retrying in ${retryDelay/1000}s... (attempt ${pollAttempts}/${maxPollAttempts})`);
+                        setTimeout(poll, retryDelay);
+                    } else {
+                        // Max attempts reached, show error but also try to load results
+                        console.log('Max polling attempts reached, checking for results anyway...');
+                        try {
+                            await loadResults(uploadId);
+                        } catch (resultsError) {
+                            showStatus(`Processing may have completed, but status check failed after ${pollAttempts} attempts. Please check the results manually or try again.`, 'error');
+                            loadingSection.style.display = 'none';
+                        }
+                    }
                 }
-            } catch (error) {
-                showStatus(`Error: ${error.message}`, 'error');
-                loadingSection.style.display = 'none';
             }
+            
+            // Start polling
+            poll();
         }
 
         async function loadResults(uploadId) {
             try {
-                const response = await fetch(`/results/${uploadId}`);
+                // Add timeout to the fetch request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                
+                const response = await fetch(`/results/${uploadId}`, {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                // Check if response is actually JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error(`Server returned ${response.status}: Expected JSON but received ${contentType || 'unknown content type'}`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 displayResults(data);
@@ -703,7 +822,18 @@
                 resultsSection.style.display = 'block';
                 showStatus('Processing completed successfully!', 'success');
             } catch (error) {
-                showStatus(`Error loading results: ${error.message}`, 'error');
+                console.error('Error loading results:', error);
+                
+                if (error.name === 'AbortError') {
+                    showStatus('Request timed out while loading results. The processing may have completed - please try refreshing the page.', 'error');
+                } else if (error.message.includes('JSON')) {
+                    showStatus('Server error while loading results. The processing may have completed - please check the server logs.', 'error');
+                } else {
+                    showStatus(`Error loading results: ${error.message}`, 'error');
+                }
+                
+                loadingSection.style.display = 'none';
+                progressBar.style.display = 'none';
             }
         }
 
