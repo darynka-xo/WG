@@ -619,13 +619,14 @@
 
             if (currentMode === 'ocr') {
                 // OCR Mode - upload and redirect to OCR viewer
-                showStatus('Uploading file for OCR analysis...', 'info');
+                showStatus('Uploading file for OCR analysis... (This may take several minutes for large files)', 'info');
                 progressBar.style.display = 'block';
+                progressFill.style.width = '10%'; // Show some initial progress
                 
                 try {
-                    // Add timeout to the upload request
+                    // Add timeout to the upload request (5 minutes for large files)
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for upload
+                    const timeoutId = setTimeout(() => controller.abort(), 600000); // 5 minute timeout for upload
                     
                     const response = await fetch('/process-pdf-ocr', {
                         method: 'POST',
@@ -668,14 +669,15 @@
                 }
             } else {
                 // Part Extraction Mode - existing functionality
-                showStatus('Uploading file...', 'info');
+                showStatus('Uploading file... (This may take several minutes for large files)', 'info');
                 progressBar.style.display = 'block';
+                progressFill.style.width = '10%'; // Show some initial progress
                 loadingSection.style.display = 'block';
                 
                 try {
-                    // Add timeout to the upload request
+                    // Add timeout to the upload request (5 minutes for large files)
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for upload
+                    const timeoutId = setTimeout(() => controller.abort(), 600000); // 5 minute timeout for upload
                     
                     const response = await fetch('/upload', {
                         method: 'POST',
@@ -695,7 +697,8 @@
 
                     if (response.ok) {
                         currentUploadId = result.upload_id;
-                        showStatus('Upload successful! Processing...', 'success');
+                        progressFill.style.width = '25%'; // Upload complete, now processing
+                        showStatus('Upload successful! Starting AI processing...', 'success');
                         pollStatus(result.upload_id);
                     } else {
                         throw new Error(result.detail || 'Upload failed');
@@ -719,7 +722,7 @@
 
         async function pollStatus(uploadId) {
             let pollAttempts = 0;
-            const maxPollAttempts = 300; // 5 minutes worth of attempts (300 * 2s = 10 minutes)
+            const maxPollAttempts = 600; // 5 minutes worth of attempts (300 * 2s = 10 minutes)
             
             async function poll() {
                 try {
@@ -727,7 +730,7 @@
                     
                     // Add timeout to the fetch request
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 30 second timeout
                     
                     const response = await fetch(`/status/${uploadId}`, {
                         signal: controller.signal,
